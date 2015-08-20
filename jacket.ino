@@ -8,47 +8,47 @@
 #define BRIGHTNESS  64
 
 CRGB leds[PIXEL_COUNT];
+CHSV colors[PIXEL_COUNT];
 
-byte newColor[90][3];
-byte prevColor[90][3];
+#define MODES 2
+
+// mode state defintions
+#define RAINBOW 0
+#define FIRE 1
+
+byte mode;
+boolean cycle_modes;
+long cycle_time;
+long start_time;
 
 void setup() {
+  delay(1000);
+  
   FastLED.addLeds<CHIPSET, LED_PIN, COLOR_ORDER>(leds, PIXEL_COUNT);
   FastLED.setCorrection(Typical8mmPixel);
   FastLED.setBrightness( BRIGHTNESS );
   FastLED.setDither( 0 );
   FastLED.show();
+  
+  for (int i=0;i<PIXEL_COUNT;i++) {
+    colors[i] = CHSV(i*5 % 256, 255, 255);
+  }
+  
+  mode = FIRE;
+  cycle_modes = false;
+  cycle_time = 30000;
+  start_time = millis();
 }
 
 void loop()  {
-    for(int pixel = 0;pixel< PIXEL_COUNT;pixel++) {
-    boolean done = true;
-    for(int i = 0;i < 3;i++) {
-      if (newColor[pixel][i] != prevColor[pixel][i]) {
-        done = false;
-      }
-    }
-    
-    if (done) {
-      random16_add_entropy(random());
-
-      newColor[pixel][0] = random8();
-      newColor[pixel][1] = random8(200,256);
-      newColor[pixel][2] = random8(200,256);
-    }
-    
-    leds[pixel].setHSV(prevColor[pixel][0], prevColor[pixel][1], prevColor[pixel][2]);
-    
-    for(int i = 0;i < 3;i++) {
-      if (newColor[pixel][i] > prevColor[pixel][i]) {
-        prevColor[pixel][i]++;
-      } else if (newColor[pixel][i] < prevColor[pixel][i]) {
-        prevColor[pixel][i]--;
-      }
-    }
+  if (mode == RAINBOW) {
+    rainbow(20);
+  } else if (mode == FIRE) {
+    fire(20);
   }
   
-  FastLED.show();
- 
-  FastLED.delay(20);
+  if (cycle_modes && start_time + cycle_time < millis()) {
+    mode = (mode + 1) % MODES;
+    start_time = millis();
+  }
 }
